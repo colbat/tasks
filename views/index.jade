@@ -1,0 +1,18 @@
+extends layout
+
+block content
+  div#intro.text-center
+    h1= title
+    p.lead Welcome to #{title}
+
+  div#tasks.center-block
+    ul.list-group
+      li.list-group-item(ng-repeat='task in taskCtrl.tasks'
+                          ng-hide='task.archived'
+                          ng-class='{done: task.done}'
+                          ng-click='taskCtrl.updateDone(task)') {{task.label}}
+        span.glyphicon.glyphicon-ok.pull-right(ng-show='task.done')
+
+    form(ng-submit='taskCtrl.addTask(taskToAdd)')
+      input.task-input(type='text', placeholder='Task' ng-model='taskToAdd.label')
+      input.task-button.btn-primary(type='submit', value='Add')
