@@ -4,9 +4,21 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
+var mongoose = require('mongoose');
+
+var mongoUri = process.env.MONGOLAB_URI || 'mongodb://localhost/tasks';
+
+mongoose.connect(mongoUri, function(error, success) {
+  if(error) {
+    console.log('Error connecting to mongodb : ' + error);
+  } else {
+    console.log('Successfully connected to mongodb.');
+  }
+});
 
 var routes = require('./routes/index');
 var users = require('./routes/users');
+var tasks = require('./routes/tasks');
 
 var app = express();
 
@@ -24,6 +36,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', routes);
 app.use('/users', users);
+app.use('/tasks', tasks);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
