@@ -6,12 +6,15 @@ block content
     p.lead Welcome to #{title}
 
   div#tasks.center-block
+    p
+      a(href='' ng-click='taskCtrl.flushCompletedTasks()') Flush completed tasks
+
     ul.list-group
       li.list-group-item(ng-repeat='task in taskCtrl.tasks'
-                          ng-hide='task.archived'
-                          ng-class='{done: task.done}'
+                          ng-hide='task.isArchived'
+                          ng-class='{done: task.isDone}'
                           ng-click='taskCtrl.updateDone(task)') {{task.label}}
-        span.glyphicon.glyphicon-ok.pull-right(ng-show='task.done')
+        span.glyphicon.glyphicon-ok.pull-right(ng-show='task.isDone')
 
     form(ng-submit='taskCtrl.addTask(taskToAdd)')
       input.task-input(type='text', placeholder='Task' ng-model='taskToAdd.label')
