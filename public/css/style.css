@@ -1,29 +1,85 @@
 body {
+  color: #fff;
   background-color: #337ab7;
 }
 
-#intro {
+#intro, #intro a {
   color: #fff;
 }
 
-#tasks {
-  max-width: 400px;
-}
-
-#tasks a {
-  color: #fff;
-}
-
-#tasks a:focus {
+#intro a:hover, #intro a:focus {
   text-decoration: none;
 }
 
-#tasks a:hover {
+#tasks, #menu, #sign-in-up-container {
+  max-width: 400px;
+}
+
+#sign-in-up-container, #menu {
+  margin: auto;
+}
+
+#sign-in-up-link {
+  padding: 15px 0 0 0;
+}
+
+.ng-invalid.ng-dirty {
+  border-color: #FA787E;
+}
+
+.ng-valid.ng-dirty {
+  border-color: #78FA89;
+}
+
+.btn-primary:focus {
+  background-color: #337ab7;
+  border-color: #2e6da4;
+}
+
+.btn-primary:hover {
+  background-color: #286090;
+  border-color: #204d74;
+}
+
+.btn-success:focus {
+  background-color: #5cb85c;
+  border-color: #398439;
+}
+
+.btn-success:hover {
+  background-color: #449d44;
+  border-color: #398439;
+}
+
+#menu {
+  margin-bottom: 10px;
+}
+
+.panel-content {
+  color: #555;
+}
+
+/*
+#tasks a, #menu a {
+  color: #fff;
+}
+
+#tasks a:focus, #menu a:focus {
+  text-decoration: none;
+}
+
+#tasks a:hover, #menu a:hover {
   text-decoration: underline;
+}
+*/
+
+.tasks-btns {
+  margin-bottom: 10px;
 }
 
 #tasks .list-group-item {
   cursor: pointer;
+  word-wrap: break-word;
 }
 
 #tasks .list-group-item.done {
@@ -59,4 +115,89 @@ body {
   width: 100%;
   padding: 10px 15px;
   border: 1px solid #ddd;
+}
+
+.toast-center {
+  margin: auto;
+  top: 10px;
+}
+
+/*
+.btn-instagram {
+  color: #fff;
+  background-color: #517fa4;
+  border: 1px solid #456c8c;
+}
+ 
+.btn-instagram:hover,
+.btn-instagram:focus {
+  color: #fff;
+  background-color: #303030;
+}
+*/
+
+.signup-or-separator {
+  position: relative;
+  height: 29px;
+  margin: 5px 0;
+  text-align: center;
+  background: none;
+}
+ 
+.signup-or-separator hr {
+  width: 90%;
+  margin: -16px auto 10px auto;
+  border-top: 1px solid #dce0e0;
+}
+ 
+.signup-or-separator .text {
+  display: inline-block;
+  padding: 8px;
+  margin: 0;
+  background-color: #eee;
+  font-weight: bold;
+}
+
+[class^='ion-'] {
+  font-size: 1.2em;
+}
+
+[class^='ion-social'] {
+  margin-right: 10px;
+}
+
+.btn-facebook {
+  color: #fff;
+  background-color: #3b5998;
+  border: 1px solid #335190;
+}
+ 
+.btn-facebook:hover,
+.btn-facebook:focus {
+  color: #fff;
+  background-color: #294786;
+}
+
+.btn-twitter {
+  color: #fff;
+  background-color: #00aced;
+  border: 1px solid #009fdb;
+}
+
+.btn-twitter:hover,
+.btn-twitter:focus {
+  color: #fff;
+  background-color: #0090c7;
+}
+
+.btn-yahoo {
+  color: #fff;
+  background-color: #720e9e;
+  border: 1px solid #580b75;
+}
+
+.btn-yahoo:hover,
+.btn-yahoo:focus {
+  color: #fff;
+  background-color: #303030;
 }

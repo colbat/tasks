@@ -3,94 +3,107 @@ var express = require('express');
 var router = express.Router();
 var mongoose = require('mongoose');
 var Task = require('../models/Task');
+var isAuthenticated = require('../auth').isAuthenticated;
+var config = require('../config');
 
-var apiKey = '4dmin';
-
-router.get('/', function(request, response) {
-  Task.find(function(error, tasks) {
-    if(error) {
-      console.log('mongodb error: ' + error);
-      return response.send('An error occured when retrieving the tasks.');
+router.get('/', isAuthenticated, function(req, res, next) {
+  Task.find({manager: req.user._id}, function(err, tasks) {
+    if(err) {
+      console.log('mongodb error: ' + err);
+      return res.send('An error occured when retrieving the tasks.');
     }
+
+    console.log('User asking: ' + req.user._id);
     
-    response.send(tasks);
-    response.end();
+    res.setHeader('cache-control', 'no-cache');
+    res.send(tasks);
   });
 });
 
-router.post('/add', function(request, response) {
-  var task = new Task({label: request.body.label});
-  task.save(function(error, task) {
-    if(error) {
-      console.log('mongodb error: ' + error);
-      return response.send('An error occured when adding a task.');
+router.post('/all', function(req, res, next) {
+  var key = req.body.superUserKey;
+  Task.find(null, function(err, tasks) {
+    if(err || key !== config.SUPER_USER_API_KEY) {
+      console.log('mongodb error: ' + err);
+      return res.send('An error occured when retrieving all the tasks.');
     }
 
-    response.send('Task successfully added: ' + task.label);
-    response.end();
+    res.setHeader('cache-control', 'no-cache');
+    res.json(tasks);
   });
 });
 
-router.get('/add', function(request, response) {
+router.post('/add', isAuthenticated, function(req, res, next) {
+  var task = new Task({
+    manager: req.user._id,
+    label: req.body.label
+  });
+
+  task.save(function(err, task) {
+    if(err) {
+      console.log('mongodb error: ' + err);
+      return res.send('An error occured when adding a task.');
+    }
+
+    res.send('Task successfully added: ' + task.label);
+  });
+});
+
+router.get('/add', isAuthenticated, function(req, res, next) {
   var task = new Task({label: 'I need to do that'});
-  task.save(function(error, task) {
-    if(error) {
-      console.log('mongodb error: ' + error);
-      return response.send('An error occured when adding a task.');
+  task.save(function(err, task) {
+    if(err) {
+      console.log('mongodb error: ' + err);
+      return res.send('An error occured when adding a task.');
     }
 
-    response.send('Task successfully added: ' + task.label);
-    response.end();
+    res.send('Task successfully added: ' + task.label);
   });
 });
 
-router.put('/:id', function(request, response) {
-  Task.update({_id: request.params.id}, {isDone: request.body.isDone}, 
-    function(error, updated) {
-      if(error) {
-        console.log('mongodb error: ' + error);
-        return response.send('An error occured while updating the task.');
+router.put('/:id', isAuthenticated, function(req, res, next) {
+  Task.update({_id: req.params.id}, {isDone: req.body.isDone}, 
+    function(err, updated) {
+      if(err) {
+        console.log('mongodb error: ' + err);
+        return res.send('An error occured while updating the task.');
       }
 
-      response.send(updated + ' task successfully updated.');
-      response.end();
+      res.send(updated + ' task successfully updated.');
     });
 });
 
-router.delete('/completed', function(request, response) {
-  Task.remove({isDone: true}, function(error, tasks) {
-    if(error) {
-      console.log('mongodb error: ' + error);
-      return response.send('An error occured when deleting a task.');
+router.delete('/completed', isAuthenticated, function(req, res, next) {
+  Task.remove({isDone: true}, function(err, tasks) {
+    if(err) {
+      console.log('mongodb error: ' + err);
+      return res.send('An error occured when deleting a task.');
     }
 
-    response.send('Task successfully deleted: ' + tasks.label);
-    response.end();
+    res.send('Task successfully deleted: ' + tasks.label);
   });
 });
 
-router.delete('/:id', function(request, response) {
-  Task.findOneAndRemove({_id: request.params.id}, function(error, tasks) {
-    if(error) {
-      console.log('mongodb error: ' + error);
-      return response.send('An error occured when deleting a task.');
+router.delete('/:id', isAuthenticated, function(req, res) {
+  Task.findOneAndRemove({_id: req.params.id}, function(err, tasks) {
+    if(err) {
+      console.log('mongodb error: ' + err);
+      return res.send('An error occured when deleting a task.');
     }
 
-    response.send('Task successfully deleted: ' + tasks.label);
-    response.end();
+    res.send('Task successfully deleted: ' + tasks.label);
   });
 });
 
-router.delete('/', function(request, response) {
-  var key = request.body.apiKey;
-  Task.remove(function(error, nbRemoved) {
-    if(error || key !== apiKey) {
-      console.log('mongodb error: ' + error);
-      return response.send('An error occured.');
+router.delete('/', function(req, res, next) {
+  var key = req.body.superUserKey;
+  Task.remove(function(err, nbRemoved) {
+    if(err || key !== config.SUPER_USER_API_KEY) {
+      console.log('mongodb error: ' + err);
+      return res.send('An error occured.');
     }
 
-    response.send('All the tasks were successfully deleted.');
-    response.end();
+    res.send('All the tasks were successfully deleted.');
   });
 });
 

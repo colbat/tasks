@@ -1,0 +1,29 @@
+div.panel-content
+  div#sign-in-up-container.jumbotron
+    p Create an account
+
+    form(name='userSignupForm' ng-submit='userSignupForm.$valid && signupUser(user)' novalidate)
+
+      div.form-group.has-feedback(ng-class="{'has-error' : userSignupForm.email.$invalid && userSignupForm.email.$dirty}")
+        label(for='input-email') Your email adress
+        input#input-email.form-control(ng-model='user.email' name='email' type='email' required)
+        div.help-block(ng-if='userSignupForm.email.$dirty' ng-messages='userSignupForm.email.$error')
+          div(ng-message='required') Please enter your email
+
+      div.form-group.has-feedback(ng-class="{'has-error' : userSignupForm.username.$invalid && userSignupForm.username.$dirty}")
+        label(for='input-username') Choose a username
+        input#input-username.form-control(ng-model='user.username' name='username' type='text' required)
+        div.help-block(ng-if='userSignupForm.username.$dirty' ng-messages='userSignupForm.username.$error')
+          div(ng-message='required') Please enter your username
+
+      div.form-group.has-feedback(ng-class="{'has-error' : userSignupForm.password.$invalid && userSignupForm.password.$dirty}")
+        label(for='input-password') Choose a password
+        input#input-password.form-control(ng-model='user.password' name='password' type='password' required)
+        div.help-block(ng-if='userSignupForm.password.$dirty' ng-messages='userSignupForm.password.$error')
+          div(ng-message='required') Please enter a password
+
+      input.btn.btn-primary(type='submit' value='Create account' ng-disabled='userSignupForm.$invalid')
+
+    div#sign-in-up-link
+      | Already have an account? 
+      a(href='/#/sign_in') Sign in

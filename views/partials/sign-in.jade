@@ -1,0 +1,35 @@
+div.panel-content
+  div#sign-in-up-container.jumbotron
+    p Sign in
+
+    form(name='userSigninForm' ng-submit='signinUser(user)' novalidate)
+      div.form-group
+        label(for='input-email') Email
+        input#input-email.form-control(ng-model='user.email' type='email' placeholder='Enter your email')
+
+      div.form-group
+        label(for='input-password') Password
+        input#input-password.form-control(ng-model='user.password' type='password' placeholder='Enter your Password')
+
+      button.btn.btn-primary(type='submit') Sign in
+
+    div#sign-in-up-link
+      | Don't have an account? 
+      a(href='/#/sign_up') Create an account
+
+    div.signup-or-separator
+      h5.text or
+      hr
+
+    div
+      button.btn.btn-block.btn-facebook(ng-click='facebookLogin()') 
+        i.ion-social-facebook 
+        |  Sign in with Facebook
+
+      button.btn.btn-block.btn-twitter(ng-click='twitterLogin()') 
+        i.ion-social-twitter 
+        |  Sign in with Twitter
+
+      //- button.btn.btn-block.btn-yahoo(ng-click='yahooLogin()') 
+      //-   i.ion-social-yahoo
+      //-   |  Sign in with Yahoo
