@@ -3,7 +3,7 @@ var bcrypt = require('bcrypt');
 var BCRYPT_LOG_ROUNDS = 10;
 
 var userSchema = mongoose.Schema({
-  email: {type: String, unique: true, lowercase: true},
+  email: {type: String, unique: true, lowercase: true, sparse: true},
   username: String,
   password: {type: String, select: false},
   createdOn: {type: Date, default: Date.now()},
