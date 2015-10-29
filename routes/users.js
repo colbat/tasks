@@ -104,7 +104,7 @@ router.post('/signin', function(req, res, next) {
  */
 router.post('/auth/facebook', function(req, res, next) {
   var accessTokenUrl = 'https://graph.facebook.com/v2.3/oauth/access_token';
-  var graphApiUrl = 'https://graph.facebook.com/v2.3/me';
+  var graphApiUrl = 'https://graph.facebook.com/v2.3/me?fields=id,name,email,picture';
 
   var params = {
     code: req.body.code,
