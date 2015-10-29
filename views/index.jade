@@ -22,7 +22,7 @@ block content
           li(ng-if='isAuthenticated()')
             a(ng-click='logout()' href='') Logout
 
-  toaster-container.toast-center
+  toaster-container.toast-center(toaster-options="{'limit': 1}")
 
-  div.container
+  div.container.main-app-container
     div(ng-view)

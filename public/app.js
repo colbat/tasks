@@ -46,6 +46,8 @@
             toaster.pop({
               type: 'error',
               body: response.data.message,
+              timeout: 3500,
+              limit: 1,
               showCloseButton: true
             });
           });
@@ -62,6 +64,8 @@
             toaster.pop({
               type: 'error',
               body: response.data.message,
+              timeout: 3500,
+              limit: 1,
               showCloseButton: true
             });
           });
@@ -122,6 +126,16 @@
       getTasks();
       
       $scope.addTask = function(taskToAdd) {
+        if(!taskToAdd || !taskToAdd.label) {
+          toaster.pop({
+            type: 'error',
+            body: 'Please name your task.',
+            timeout: 3500,
+            showCloseButton: true
+          });
+          return;
+        }
+
         if(!$auth.isAuthenticated()) {
           $scope.tasks.push({
             label: taskToAdd.label,
@@ -132,6 +146,7 @@
           toaster.pop({
             type: 'success',
             body: 'Task successfuly added.',
+            timeout: 1500,
             showCloseButton: true
           });
 
@@ -139,16 +154,25 @@
           return;
         }
 
-        $http.post('tasks/add/', {label: taskToAdd.label}).success(function(data) {
-          getTasks();
-
-          toaster.pop({
-            type: 'success',
-            body: 'Task successfuly added.',
-            showCloseButton: true
+        $http.post('tasks/add/', {label: taskToAdd.label})
+          .success(function(data) {
+            getTasks();
+            toaster.pop({
+              type: 'success',
+              body: 'Task successfuly added.',
+              timeout: 1500,
+              showCloseButton: true
+            });
+            taskToAdd.label = "";
+          })
+          .error(function(data) {
+            toaster.pop({
+              type: 'error',
+              body: data.message,
+              timeout: 3500,
+              showCloseButton: true
+            });
           });
-        });
-        taskToAdd.label = "";
       };
 
       $scope.updateDone = function(task) {

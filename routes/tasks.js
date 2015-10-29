@@ -34,6 +34,10 @@ router.post('/all', function(req, res, next) {
 });
 
 router.post('/add', isAuthenticated, function(req, res, next) {
+  if(!req.body.label) {
+    return res.status(401).send({message: 'Please name your task.'});
+  }
+
   var task = new Task({
     manager: req.user._id,
     label: req.body.label

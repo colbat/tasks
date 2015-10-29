@@ -3,6 +3,10 @@ body {
   background-color: #337ab7;
 }
 
+.main-app-container {
+  margin-bottom: 20px;
+}
+
 #intro, #intro a {
   color: #fff;
 }
@@ -120,6 +124,10 @@ body {
 .toast-center {
   margin: auto;
   top: 10px;
+}
+
+#toast-container > div {
+  opacity: 0.9;
 }
 
 /*
