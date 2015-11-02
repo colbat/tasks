@@ -22,8 +22,8 @@
 
     $authProvider.facebook({
       url: '/users/auth/facebook',
-      clientId: '648103078655495'
-      // clientId: '1185205824827748'
+      // clientId: '648103078655495'
+      clientId: '1185205824827748'
     });
 
     $authProvider.twitter({
