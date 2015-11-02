@@ -19,6 +19,27 @@ body {
   max-width: 400px;
 }
 
+.nav-profile-infos {
+  line-height: 50px;
+}
+
+.display-name {
+  font-weight: bold;
+}
+
+.display-name::after {
+  content: " ";
+}
+
+.nav-profile-infos > img {
+  width: 44px;
+  height: 44px;
+}
+
+.navbar-toggle {
+  margin-left: 10px;
+}
+
 #sign-in-up-container, #menu {
   margin: auto;
 }
@@ -208,4 +229,8 @@ body {
 .btn-yahoo:focus {
   color: #fff;
   background-color: #303030;
+}
+
+[ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
+  display: none !important;
 }

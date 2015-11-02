@@ -13,8 +13,6 @@ router.get('/', isAuthenticated, function(req, res, next) {
       return res.send('An error occured when retrieving the tasks.');
     }
 
-    console.log('User asking: ' + req.user._id);
-    
     res.setHeader('cache-control', 'no-cache');
     res.send(tasks);
   });
@@ -43,18 +41,6 @@ router.post('/add', isAuthenticated, function(req, res, next) {
     label: req.body.label
   });
 
-  task.save(function(err, task) {
-    if(err) {
-      console.log('mongodb error: ' + err);
-      return res.send('An error occured when adding a task.');
-    }
-
-    res.send('Task successfully added: ' + task.label);
-  });
-});
-
-router.get('/add', isAuthenticated, function(req, res, next) {
-  var task = new Task({label: 'I need to do that'});
   task.save(function(err, task) {
     if(err) {
       console.log('mongodb error: ' + err);

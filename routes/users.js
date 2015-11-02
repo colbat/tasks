@@ -5,11 +5,13 @@ var router = express.Router();
 var mongoose = require('mongoose');
 var User = require('../models/User');
 var createToken = require('../auth').createToken;
+var hasTokenExpired = require('../auth').hasTokenExpired;
 var config = require('../config');
 
-router.get('/', function(req, res, next) {
+router.post('/', function(req, res, next) {
+  var key = req.body.superUserKey;
   User.find(null, '+password', function(err, users) {
-    if(err) {
+    if(err || key !== config.SUPER_USER_API_KEY) {
       console.log('mongodb error: ' + err);
       return res.send('An error occured when retrieving the users.');
     }
@@ -36,33 +38,40 @@ router.delete('/:id', function(req, res, next) {
 
 router.post('/signup', function(req, res, next) {
   var reqEmail = req.body.email.toLowerCase();
-  User.findOne({email: reqEmail}, function(err, existingUser) {
-    if(existingUser) {
+  var reqUsername = req.body.username.toLowerCase();
+  User.findOne({email: reqEmail}, function(err, existingEmail) {
+    if(existingEmail) {
       return res.status(401).send({message: 'Email is already taken'});
     }
 
-    if(!req.body.password) {
-      return res.status(401).send({message: 'Password is required'});
-    }
-
-    if(!req.body.password) {
-      return res.status(401).send({message: 'Email is required'});
-    }
-
-    var user = new User(req.body);
-    
-    user.save(function(err, user) {
-      if(err) {
-        console.log('mongodb error: ' + err);
-        return res.send('An error occured when signing up an user.');
+    User.findOne({username: reqUsername}, function(err, existingUsername) {
+      if(existingUsername) {
+        return res.status(401).send({message: 'Username is already taken'});
       }
 
-      var token = createToken(user);
+      if(!req.body.password) {
+        return res.status(401).send({message: 'Password is required'});
+      }
 
-      res.send({
-        message: 'User successfully signed up.',
-        token: token,
-        user: user
+      if(!req.body.email) {
+        return res.status(401).send({message: 'Email is required'});
+      }
+
+      var user = new User(req.body);
+      
+      user.save(function(err, user) {
+        if(err) {
+          console.log('mongodb error: ' + err);
+          return res.send('An error occured when signing up an user.');
+        }
+
+        var token = createToken(user);
+
+        res.send({
+          message: 'User successfully signed up.',
+          token: token,
+          user: user
+        });
       });
     });
   });
@@ -95,6 +104,11 @@ router.post('/signin', function(req, res, next) {
       });
     });
   });
+});
+
+router.post('/check_jwt_expired', function(req, res, next) {
+  var expired = hasTokenExpired(req.body.token);
+  res.send({hasExpired: expired});
 });
 
 /*
@@ -140,12 +154,8 @@ router.post('/auth/facebook', function(req, res, next) {
               return res.status(400).send({message: 'User not found'});
             }
 
-            user.email = profile.email;
             user.facebook.profileId = profile.id;
             user.facebook.accessToken = accessToken.access_token;
-            
-            //user.picture = user.picture || 'https://graph.facebook.com/v2.3/' + profile.id + '/picture?type=large';
-            //user.displayName = user.displayName || profile.name;
 
             user.save(function() {
               var token = createToken(user);
@@ -160,6 +170,19 @@ router.post('/auth/facebook', function(req, res, next) {
         // Step 2b. Create a new user account or return an existing one.
         User.findOne({'facebook.profileId': profile.id}, function(err, existingUser) {
           if(existingUser) {
+            // Name is subject to change.
+            // Keeps it updated
+            if(existingUser.displayName !== profile.name) {
+              existingUser.displayName = profile.name;
+
+              existingUser.save(function(err, user) {
+                if(err) {
+                  console.log('mongodb error: ' + err);
+                  return res.send('An error occured when updating an existing user.');
+                }
+              });
+            }
+
             var token = createToken(existingUser);
             return res.send({
               token: token,
@@ -168,11 +191,9 @@ router.post('/auth/facebook', function(req, res, next) {
           }
 
           var user = new User();
-          user.email = profile.email;
           user.facebook.profileId = profile.id;
           user.facebook.accessToken = accessToken.access_token;
-          //user.picture = 'https://graph.facebook.com/' + profile.id + '/picture?type=large';
-          //user.displayName = profile.name;
+          user.displayName = profile.name;
 
           user.save(function(err, user) {
             if(err) {
@@ -201,6 +222,7 @@ router.get('/auth/twitter', function(req, res) {
   var requestTokenUrl = 'https://api.twitter.com/oauth/request_token';
   var accessTokenUrl = 'https://api.twitter.com/oauth/access_token';
   var authenticateUrl = 'https://api.twitter.com/oauth/authenticate';
+  var userInfosUrl = 'https://api.twitter.com/1.1/users/show.json';
 
   if(!req.query.oauth_token || !req.query.oauth_verifier) {
     var requestTokenOauth = {
@@ -226,65 +248,108 @@ router.get('/auth/twitter', function(req, res) {
     };
 
     // Step 3. Exchange oauth token and oauth verifier for access token.
-    request.post({url: accessTokenUrl, oauth: accessTokenOauth}, function(err, response, profile) {
-      profile = qs.parse(profile);
+    request.post({url: accessTokenUrl, oauth: accessTokenOauth}, function(err, response, accessToken) {
+      var perm_data = qs.parse(accessToken);
+      var oauth = {
+        consumer_key: config.TWITTER_KEY,
+        consumer_secret: config.TWITTER_SECRET,
+        token: perm_data.oauth_token,
+        token_secret: perm_data.oauth_token_secret
+      };
+      var params = {
+        screen_name: perm_data.screen_name,
+        user_id: perm_data.user_id
+      }
 
-      // Step 4a. Link user accounts.
-      if (req.headers.authorization) {
-        User.findOne({'twitter.profileId': profile.user_id}, function(err, existingUser) {
-          if (existingUser) {
-            return res.status(409).send({ message: 'There is already a Twitter account that belongs to you' });
-          }
+      // Step 4. Retrieve profile information about the current user.
+      request.get({url: userInfosUrl, oauth: oauth, qs: params, json: true}, function(err, response, profile) {
 
-          var token = req.headers.authorization.split(' ')[1];
-          var payload = jwt.decode(token, config.TOKEN_SECRET);
-
-          User.findById(payload.sub, function(err, user) {
-            if (!user) {
-              return res.status(400).send({ message: 'User not found' });
+        // Step 4a. Link user accounts.
+        if (req.headers.authorization) {
+          User.findOne({'twitter.profileId': profile.id}, function(err, existingUser) {
+            if (existingUser) {
+              return res.status(409).send({ message: 'There is already a Twitter account that belongs to you' });
             }
 
-            user.twitter.profileId = profile.user_id;
-            user.username = user.username || profile.screen_name;
+            var token = req.headers.authorization.split(' ')[1];
+            var payload = jwt.decode(token, config.TOKEN_SECRET);
 
-            user.save(function() {
-              var token = createToken(user);
+            User.findById(payload.sub, function(err, user) {
+              if (!user) {
+                return res.status(400).send({ message: 'User not found' });
+              }
+
+              user.twitter.profileId = profile.id;
+              user.twitter.screenName = profile.screen_name;
+
+              user.save(function() {
+                var token = createToken(user);
+                return res.send({
+                  token: token,
+                  user: user
+                });
+              });
+            });
+          });
+        } else {
+          // Step 4b. Create a new user account or return an existing one.
+          User.findOne({'twitter.profileId': profile.id }, function(err, existingUser) {
+            if (existingUser) {
+              // Screen name is subject to change.
+              // Keeps it updated
+              if(existingUser.twitter.screenName !== profile.screen_name) {
+                existingUser.twitter.screenName = profile.screen_name;
+
+                existingUser.save(function(err, user) {
+                  if(err) {
+                    console.log('mongodb error: ' + err);
+                    return res.send('An error occured when updating an existing user.');
+                  }
+                });
+              }
+
+              // Display name is subject to change.
+              // Keeps it updated
+              if(existingUser.displayName !== profile.name) {
+                existingUser.displayName = profile.name;
+
+                existingUser.save(function(err, user) {
+                  if(err) {
+                    console.log('mongodb error: ' + err);
+                    return res.send('An error occured when updating an existing user.');
+                  }
+                });
+              }
+
+              var token = createToken(existingUser);
               return res.send({
+                token: token,
+                user: existingUser
+              });
+            }
+
+            var user = new User();
+            user.twitter.profileId = profile.id;
+            user.twitter.screenName = profile.screen_name;
+            user.displayName = profile.name;
+
+            user.save(function(err, user) {
+              if(err) {
+                console.log('mongodb error: ' + err);
+                return res.send('An error occured when signing up an user.');
+              }
+
+              var token = createToken(user);
+              res.send({
                 token: token,
                 user: user
               });
             });
           });
-        });
-      } else {
-        // Step 4b. Create a new user account or return an existing one.
-        User.findOne({'twitter.profileId': profile.user_id }, function(err, existingUser) {
-          if (existingUser) {
-            var token = createToken(existingUser);
-            return res.send({
-              token: token,
-              user: existingUser
-            });
-          }
+        }
+      });
 
-          var user = new User();
-          user.twitter.profileId = profile.user_id;
-          user.username = profile.screen_name;
 
-          user.save(function(err, user) {
-            if(err) {
-              console.log('mongodb error: ' + err);
-              return res.send('An error occured when signing up an user.');
-            }
-
-            var token = createToken(user);
-            res.send({
-              token: token,
-              user: user
-            });
-          });
-        });
-      }
     });
   }
 });

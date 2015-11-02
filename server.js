@@ -91,14 +91,4 @@ app.use(function(err, req, res, next) {
   });
 });
 
-function createToken(user) {
-  var payLoad = {
-    exp: moment().add('14', days).unix(),
-    iat: moment().unix(),
-    sub: user._id
-  }
-
-  return jwt.encode(payLoad, config.tokenSecret);
-}
-
 module.exports = app;

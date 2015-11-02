@@ -4,7 +4,8 @@ block content
   nav.navbar.navbar-default.navbar-static-top
     div.container(ng-controller='UserController')
 
-      div.navbar-header
+      //- div.navbar-header
+      ul.nav.navbar-nav
         button.navbar-toggle.collapsed(type='button' data-toggle='collapse' data-target='#nav-collapsed')
           span.sr-only Toggle navigation
           span.icon-bar
@@ -12,15 +13,20 @@ block content
           span.icon-bar
         a.navbar-brand(href='/#/') Tasks
 
-
       div.collapse.navbar-collapse#nav-collapsed
+        ul.nav.navbar-nav.navbar-right(ng-if='isAuthenticated()' ng-cloak)
+          li.nav-profile-infos
+            span.display-name.text-primary {{currentUser.displayName || currentUser.username}}
+            img.img-rounded(ng-src='{{currentUser.defaultProfilePicture}}' alt='Profile image')
         ul.nav.navbar-nav
-          li(ng-if='!isAuthenticated()')
+          li(ng-if='!isAuthenticated()' ng-cloak)
             a(href='/#/sign_in') Log in
-          li(ng-if='!isAuthenticated()')
+          li(ng-if='!isAuthenticated()' ng-cloak)
             a(href='/#/sign_up') Sign up
-          li(ng-if='isAuthenticated()')
+          li(ng-if='isAuthenticated()' ng-cloak)
             a(ng-click='logout()' href='') Logout
+
+          
 
   toaster-container.toast-center(toaster-options="{'limit': 1}")
 

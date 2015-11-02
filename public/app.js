@@ -22,8 +22,8 @@
 
     $authProvider.facebook({
       url: '/users/auth/facebook',
-      // clientId: '648103078655495'
-      clientId: '1185205824827748'
+      clientId: '648103078655495'
+      // clientId: '1185205824827748'
     });
 
     $authProvider.twitter({
@@ -38,10 +38,19 @@
   app.controller('UserController', [
     '$http', '$scope', '$window', '$rootScope', '$auth', 'toaster', '$route',
     function($http, $scope, $window, $rootScope, $auth, toaster, $route) {
-      $scope.user = {};
+
+      // Sets current user to the root scope when the page is refreshed
+      if($window.localStorage.currentUser) {
+        $rootScope.currentUser = JSON.parse($window.localStorage.currentUser);
+      }
 
       $scope.signupUser = function(user) {
         $auth.signup(user)
+          .then(function(response) {
+            var currentUser = updateProfilePicture(response.data.user);
+            $window.localStorage.currentUser = JSON.stringify(currentUser);
+            $rootScope.currentUser = JSON.parse($window.localStorage.currentUser);
+          })
           .catch(function(response) {
             toaster.pop({
               type: 'error',
@@ -54,10 +63,10 @@
       };
 
       $scope.signinUser = function(user) {
-
         $auth.login({email: user.email, password: user.password})
           .then(function(response) {
-            $window.localStorage.currentUser = JSON.stringify(response.data.user);
+            var currentUser = updateProfilePicture(response.data.user);
+            $window.localStorage.currentUser = JSON.stringify(currentUser);
             $rootScope.currentUser = JSON.parse($window.localStorage.currentUser);
           })
           .catch(function(response) {
@@ -85,7 +94,8 @@
       $scope.facebookLogin = function() {
         $auth.authenticate('facebook')
           .then(function(response) {
-            $window.localStorage.currentUser = JSON.stringify(response.data.user);
+            var currentUser = updateProfilePicture(response.data.user);
+            $window.localStorage.currentUser = JSON.stringify(currentUser);
             $rootScope.currentUser = JSON.parse($window.localStorage.currentUser);
           })
           .catch(function(response) {
@@ -96,7 +106,8 @@
       $scope.twitterLogin = function() {
         $auth.authenticate('twitter')
           .then(function(response) {
-            $window.localStorage.currentUser = JSON.stringify(response.data.user);
+            var currentUser = updateProfilePicture(response.data.user);
+            $window.localStorage.currentUser = JSON.stringify(currentUser);
             $rootScope.currentUser = JSON.parse($window.localStorage.currentUser);
           })
           .catch(function(response) {
@@ -104,16 +115,28 @@
           });
       };
 
-      $scope.yahooLogin = function() {
-        $auth.authenticate('yahoo')
-          .then(function(response) {
-            $window.localStorage.currentUser = JSON.stringify(response.data.user);
-            $rootScope.currentUser = JSON.parse($window.localStorage.currentUser);
-          })
-          .catch(function(response) {
-            console.log(response.data);
-          });
-      };
+      function updateProfilePicture(user) {
+        if(user.facebook) {
+          var profileId = user.facebook.profileId;
+          var url = '//graph.facebook.com/' + profileId + '/picture';
+          user.defaultProfilePicture = url;
+          return user;
+        }
+
+        if(user.twitter) {
+          var screenName = user.twitter.screenName;
+          var url = '//twitter.com/' + screenName + '/profile_image';
+          user.defaultProfilePicture = url;
+          return user;
+        }
+
+        if(user.email) {
+          var hash = md5(user.email);
+          var url = '//gravatar.com/avatar/' + hash;
+          user.defaultProfilePicture = url;
+          return user;
+        }
+      }
   }]);
 
 
@@ -212,9 +235,18 @@
           $scope.tasks = fillDemoTasks();
         } 
         else {
-          $http.get('tasks/').success(function(data) {
-          $scope.tasks = data;
-        });
+          $http.get('tasks/')
+            .success(function(data) {
+              $scope.tasks = data;
+            })
+            .error(function(data) {
+              toaster.pop({
+                type: 'error',
+                body: data.message,
+                timeout: 4500,
+                showCloseButton: true
+              });
+            });
         }
       }
 
@@ -253,4 +285,19 @@
         ];
       }
   }]);
+
+  // If the user already has a token from a previous
+  // login, we check if it has expired before loading
+  // the angular app
+  var token = localStorage.satellizer_token;
+  if(token) {
+    $.post('/users/check_jwt_expired', {token: token}, function(data) {
+      if(data.hasExpired) {
+        localStorage.removeItem('satellizer_token');
+      }
+      angular.bootstrap(document, ['tasks']);
+    });
+  } else {
+    angular.bootstrap(document, ['tasks']);
+  }
 })();

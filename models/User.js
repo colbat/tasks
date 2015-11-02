@@ -4,7 +4,8 @@ var BCRYPT_LOG_ROUNDS = 10;
 
 var userSchema = mongoose.Schema({
   email: {type: String, unique: true, lowercase: true, sparse: true},
-  username: String,
+  username: {type: String, unique: true, lowercase: true, spare: true},
+  displayName: String,
   password: {type: String, select: false},
   createdOn: {type: Date, default: Date.now()},
   modifiedOn: {type: Date, default: Date.now()},
@@ -16,7 +17,8 @@ var userSchema = mongoose.Schema({
     accessToken: String
   },
   twitter: {
-    profileId: String
+    profileId: String,
+    screenName: String
   }
 });
 
