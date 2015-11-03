@@ -18,7 +18,16 @@ exports.createToken = function(user) {
 
 // Initial JWT check before loading the Angular app
 exports.hasTokenExpired = function(token) {
-  var payload = jwt.decode(token, config.tokenSecret);
+  var payload = null;
+
+  try {
+    payload = jwt.decode(token, config.tokenSecret);
+  } catch(err) {
+    // An error occured. Signature verification may have failed.
+    // Happens if the token signing key has changed.
+    return true;
+  }
+
   var userId = payload.sub;
   var version = payload.app_version;
   var exp = payload.exp
@@ -46,7 +55,16 @@ exports.isAuthenticated = function(req, res, next) {
 
   var header = req.headers.authorization.split(' ');
   var token = header[1];
-  var payload = jwt.decode(token, config.tokenSecret);
+  var payload = null;
+
+  try {
+    payload = jwt.decode(token, config.tokenSecret);
+  } catch(err) {
+    // An error occured. Signature verification may have failed.
+    // Happens if the token signing key has changed.
+    return res.status(400).send({message: 'Token has expired. Please log in again'});
+  }
+
   var userId = payload.sub;
   var version = payload.app_version;
   var exp = payload.exp
