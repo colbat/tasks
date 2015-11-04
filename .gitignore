@@ -1,1 +1,10 @@
+public/css/vendor
+public/vendor/angular-animate.min.js
+public/vendor/angular-messages.min.js
+public/vendor/angular-route.min.js
+public/vendor/angular.min.js
+public/vendor/bootstrap.min.js
+public/vendor/jquery.min.js
+public/vendor/satellizer.min.js
+public/vendor/toaster.min.js
 config_local.js
