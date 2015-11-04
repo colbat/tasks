@@ -8,3 +8,4 @@ public/vendor/jquery.min.js
 public/vendor/satellizer.min.js
 public/vendor/toaster.min.js
 config_local.js
+gulpfile.js
