@@ -15,15 +15,7 @@ var banner = ['/**',
 
 gulp.task('minify', function() {
     return gulp.src([
-        'public/vendor/jquery.min.js',
-        'public/vendor/bootstrap.min.js',
-        'public/vendor/angular.min.js',
-        'public/vendor/angular-animate.min.js',
-        'public/vendor/angular-route.min.js',
-        'public/vendor/angular-messages.min.js',
-        'public/vendor/toaster.min.js',
-        'public/vendor/satellizer.min.js',
-        'public/vendor/md5.min.js',
+    	'public/vendor/md5.min.js',
         'public/app.js'
     ])
         .pipe(concat('app.min.js'))
@@ -42,7 +34,6 @@ gulp.task('complexity', function() {
 
 gulp.task('styles', function() {
   gulp.src([
-    'public/css/vendor/*.css',
     'public/css/style.css'
   ])
     .pipe(concat('style.min.css'))
