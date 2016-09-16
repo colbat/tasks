@@ -1,99 +1,95 @@
-/* Tasks API */
 var express = require('express');
 var router = express.Router();
-var mongoose = require('mongoose');
-var Task = require('../models/Task');
 var isAuthenticated = require('../auth').isAuthenticated;
-var config = require('../config');
+var isSuperUser = require('../auth').isSuperUser;
+var tasks = require('../controllers/tasks');
 
+
+/*
+ * GET /tasks - Retrieves all the tasks for the signed in user
+ */
 router.get('/', isAuthenticated, function(req, res, next) {
-  Task.find({manager: req.user._id}, function(err, tasks) {
-    if(err) {
-      console.log('mongodb error: ' + err);
-      return res.send('An error occured when retrieving the tasks.');
-    }
-
+  tasks.getTasksForUser(req.user._id, function(err, tasks) {
+    if(err) return res.send('An error occured when retrieving the tasks.');
     res.setHeader('cache-control', 'no-cache');
     res.send(tasks);
   });
 });
 
-router.post('/all', function(req, res, next) {
-  var key = req.body.superUserKey;
-  Task.find(null, function(err, tasks) {
-    if(err || key !== config.SUPER_USER_API_KEY) {
-      console.log('mongodb error: ' + err);
-      return res.send('An error occured when retrieving all the tasks.');
-    }
 
+/*
+ * POST /tasks/all - Retrieves all the tasks of all the users
+ */
+router.post('/all', isSuperUser, function(req, res, next) {
+  tasks.getTasks(function(err, tasks) {
+    if(err) return res.send('An error occured when retrieving the tasks.');
     res.setHeader('cache-control', 'no-cache');
     res.json(tasks);
   });
 });
 
+
+/*
+ * POST /tasks/add - Saves the tasks for the user
+ */
 router.post('/add', isAuthenticated, function(req, res, next) {
   if(!req.body.label) {
     return res.status(401).send({message: 'Please name your task.'});
   }
 
-  var task = new Task({
+  var task = {
     manager: req.user._id,
     label: req.body.label
-  });
+  };
 
-  task.save(function(err, task) {
-    if(err) {
-      console.log('mongodb error: ' + err);
-      return res.send('An error occured when adding a task.');
-    }
-
+  tasks.saveTask(task, function(err, task) {
+    if(err) return res.send('An error occured when adding a task.');
     res.send('Task successfully added: ' + task.label);
   });
 });
 
-router.put('/:id', isAuthenticated, function(req, res, next) {
-  Task.update({_id: req.params.id}, {isDone: req.body.isDone}, 
-    function(err, updated) {
-      if(err) {
-        console.log('mongodb error: ' + err);
-        return res.send('An error occured while updating the task.');
-      }
 
-      res.send(updated + ' task successfully updated.');
-    });
+/*
+ * PUT /tasks/:id - Updates the task status for the user
+ */
+router.put('/:id', isAuthenticated, function(req, res, next) {  
+  tasks.updateTask(req.params.id, req.user._id, req.body.isDone, function(err, nbUpdated) {
+    if(err) return res.send('An error occured while updating the task.');
+    res.send(nbUpdated + ' task updated.');
+  });
 });
 
+
+/*
+ * DELETE /tasks/completed - Deletes the completed tasks for the user
+ */
 router.delete('/completed', isAuthenticated, function(req, res, next) {
-  Task.remove({isDone: true}, function(err, tasks) {
-    if(err) {
-      console.log('mongodb error: ' + err);
-      return res.send('An error occured when deleting a task.');
-    }
-
-    res.send('Task successfully deleted: ' + tasks.label);
+  tasks.deleteCompletedTasks(req.user._id, function(err) {
+    if(err) return res.send('An error occured when deleting the completed tasks.');
+    res.send('Completed tasks successfully deleted.');
   });
 });
 
+
+/*
+ * DELETE /tasks/:id - Deletes a specific task for the user
+ */
 router.delete('/:id', isAuthenticated, function(req, res) {
-  Task.findOneAndRemove({_id: req.params.id}, function(err, tasks) {
-    if(err) {
-      console.log('mongodb error: ' + err);
-      return res.send('An error occured when deleting a task.');
-    }
-
+  tasks.deleteTask(req.params.id, req.user._id, function(err, task) {
+    if(err) return res.send('An error occured when deleting a task.');
+    if(!task) return res.send('Task not found.');
     res.send('Task successfully deleted: ' + tasks.label);
   });
 });
 
-router.delete('/', function(req, res, next) {
-  var key = req.body.superUserKey;
-  Task.remove(function(err, nbRemoved) {
-    if(err || key !== config.SUPER_USER_API_KEY) {
-      console.log('mongodb error: ' + err);
-      return res.send('An error occured.');
-    }
 
-    res.send('All the tasks were successfully deleted.');
+/*
+ * DELETE /tasks - Deletes all the tasks of all the users
+ */
+router.delete('/', isSuperUser, function(req, res, next) {
+  tasks.deleteTasks(function(err, nbRemoved) {
+    if(err) return res.send('An error occured when removing all the tasks.');
+    res.send(nbRemoved + ' tasks were deleted.');
   });
 });
 

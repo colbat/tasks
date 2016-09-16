@@ -4,7 +4,7 @@ var BCRYPT_LOG_ROUNDS = 10;
 
 var userSchema = mongoose.Schema({
   email: {type: String, unique: true, lowercase: true, sparse: true},
-  username: {type: String, unique: true, lowercase: true, spare: true},
+  username: {type: String, unique: true, lowercase: true, sparse: true},
   displayName: String,
   password: {type: String, select: false},
   createdOn: {type: Date, default: Date.now()},
@@ -27,6 +27,14 @@ userSchema.methods.comparePassword = function(password, done) {
     done(err, isMatch);
   });
 };
+
+userSchema.pre('validate', function(next) {
+  var isLocal = !this.facebook.profileId && !this.twitter.profileId;
+  if(isLocal && !(this.email && this.username && this.password)) {
+    next(Error('Email, username and password are required.'));
+  }
+  next();
+});
 
 userSchema.pre('save', function(next) {
   genHash(next, this);

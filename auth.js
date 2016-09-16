@@ -91,3 +91,12 @@ exports.isAuthenticated = function(req, res, next) {
     next();
   });
 }
+
+exports.isSuperUser = function(req, res, next) {
+  var key = req.body.superUserKey;
+  if(key !== config.SUPER_USER_API_KEY) {
+    console.log('An error occured. Not authorized.');
+    return res.status(400).send({message: 'An error occured. Not authorized.'});
+  }
+  next();
+}
