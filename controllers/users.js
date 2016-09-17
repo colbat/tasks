@@ -48,6 +48,8 @@ module.exports = {
   deleteUser: function(id, callback) {
     User.findOneAndRemove({_id: id}, function(err, user) {
       if(err) console.log('mongodb error: ' + err);
+      // Fires the remove hook. Will remove the tasks of this user.
+      user.remove();
       callback(err, user);
     });
   }

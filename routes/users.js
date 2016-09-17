@@ -28,8 +28,6 @@ router.delete('/:id', isSuperUser, function(req, res, next) {
   var id = req.params.id;
   users.deleteUser(id, function(err, user) {
     if(err) return res.send('An error occured when removing the user.');
-    // Fires the remove hook. Will remove the tasks of this user.
-    user.remove();
     res.send('User successfully deleted: ' + user._id);
   });
 });
