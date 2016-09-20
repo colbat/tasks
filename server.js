@@ -14,13 +14,17 @@ var routes = require('./routes/index');
 var users = require('./routes/users');
 var tasks = require('./routes/tasks');
 
-mongoose.connect(config.MONGO_URI, function(error, success) {
-  if(error) {
-    console.log('MongoDB Connection Error: ' + error);
-  } else {
-    console.log('Successfully connected to MongoDB.');
-  }
-});
+// Connection to the mongo database when we are not in a testing environment.
+// In a testing environment the connection will be mocked.
+if(process.env.NODE_ENV !== 'test') {
+  mongoose.connect(config.MONGO_URI, function(error, success) {
+    if(error) {
+      console.log('MongoDB Connection Error: ' + error);
+    } else {
+      console.log('Successfully connected to MongoDB.');
+    }
+  });
+}
 
 var app = express();
 

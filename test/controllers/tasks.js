@@ -1,34 +1,28 @@
 var mockgoose = require('mockgoose');
-var mongoose = require('mongoose');
 var tasks = require('../../controllers/tasks');
 var users = require('../../controllers/users');
-var assert = require('assert');
 var chai = require('chai');
 var should = chai.should();
-
-// Mocks the mongoose connection
-before(function(done) {
-  if(mongoose.connection.readyState === 0) {
-    mockgoose(mongoose).then(function() {
-      mongoose.connect('mongodb://localhost/tasks', function(err) {
-        done(err);
-      });
-    });
-  } else {
-    done();
-  }
-});
-
-afterEach(function(done) {
-  mockgoose.reset();
-  done();
-});
-
-after(function(done) {
-  mongoose.disconnect(done);
-});
+var connectDB = require('../utils').connectDB;
+var disconnectDB = require('../utils').disconnectDB;
+var helper = require('../helper');
 
 describe('Tasks Controller', function() {
+
+  before(function(done) {
+    connectDB(function(err) {
+      done(err);
+    });
+  });
+
+  after(function() {
+    disconnectDB();
+  });
+
+  afterEach(function(done) {
+    mockgoose.reset();
+    done();
+  });
 
   describe('Save', function() {
 
@@ -67,23 +61,14 @@ describe('Tasks Controller', function() {
     });
 
     it('should retrieve all the tasks for a user', function(done) {
-      var mockUser = {
-        _id: '57dbf32979de682530f8d629',
-        email: 'test@test.com',
-        username: 'test',
-        password: 'test'
-      };
-
-      var task1 = {manager: '57dbf32979de682530f8d629', label: 'task1'};
-      var task2 = {manager: '57dbf32979de682530f8d629', label: 'task2'};
-
+      var mockUser = helper.user;
+      var task1 = helper.task1;
+      var task2 = helper.task2;
+      
       users.saveUser(mockUser, function(err, user) {
-
         tasks.saveTask(task1, function(err, task) {
-
           tasks.saveTask(task2, function(err, task) {
-
-            tasks.getTasksForUser('57dbf32979de682530f8d629', function(err, tasks) {
+            tasks.getTasksForUser(mockUser._id, function(err, tasks) {
               tasks.length.should.be.equal(2);
               done();
             });
@@ -97,28 +82,14 @@ describe('Tasks Controller', function() {
   describe('Update', function() {
 
     it('should update a task status to "done" for a user', function(done) {
-      var mockUser = {
-        _id: '57dbf32979de682530f8d629',
-        email: 'test@test.com',
-        username: 'test',
-        password: 'test'
-      };
-
-      var task1 = {
-        _id: '5630f8a4455b683d22f3a084',
-        manager: '57dbf32979de682530f8d629', 
-        label: 'task1'
-      };
+      var mockUser = helper.user
+      var task1 = helper.task1
 
       users.saveUser(mockUser, function(err, user) {
-
         tasks.saveTask(task1, function(err, task) {
-
-          tasks.updateTask('5630f8a4455b683d22f3a084',
-            '57dbf32979de682530f8d629',
-            true,
+          tasks.updateTask(task1._id, mockUser._id, true,
             function(err, nbUpdated) {
-              tasks.getTasksForUser('57dbf32979de682530f8d629', function(err, tasks) {
+              tasks.getTasksForUser(mockUser._id, function(err, tasks) {
                 tasks[0].isDone.should.be.equal(true);
                 done();
               });
@@ -132,26 +103,12 @@ describe('Tasks Controller', function() {
   describe('Delete', function() {
 
     it('should delete a task for a user', function(done) {
-      var mockUser = {
-        _id: '57dbf32979de682530f8d629',
-        email: 'test@test.com',
-        username: 'test',
-        password: 'test'
-      };
-
-      var task1 = {
-        _id: '5630f8a4455b683d22f3a084',
-        manager: '57dbf32979de682530f8d629', 
-        label: 'task1'
-      };
+      var mockUser = helper.user;
+      var task1 = helper.task1;
 
       users.saveUser(mockUser, function(err, user) {
-
         tasks.saveTask(task1, function(err, task) {
-
-          tasks.deleteTask('5630f8a4455b683d22f3a084',
-            '57dbf32979de682530f8d629',
-            function(err, task) {
+          tasks.deleteTask(task1._id, mockUser._id, function(err, task) {
             tasks.getTasks(function(err, tasks) {
               tasks.length.should.be.equal(0);
               done();
@@ -162,27 +119,14 @@ describe('Tasks Controller', function() {
     });
 
     it('should delete all the completed tasks for a user', function(done) {
-      var mockUser = {
-        _id: '57dbf32979de682530f8d629',
-        email: 'test@test.com',
-        username: 'test',
-        password: 'test'
-      };
-
-      var task1 = {
-        _id: '5630f8a4455b683d22f3a084',
-        manager: '57dbf32979de682530f8d629', 
-        label: 'task1',
-        isDone: true
-      };
+      var mockUser = helper.user;
+      var task1 = helper.task1;
+      task1.isDone = true;
 
       users.saveUser(mockUser, function(err, user) {
-
         tasks.saveTask(task1, function(err, task) {
-
-          tasks.deleteCompletedTasks('57dbf32979de682530f8d629', function(err) {
-
-            tasks.getTasksForUser('57dbf32979de682530f8d629', function(err, tasks) {
+          tasks.deleteCompletedTasks(mockUser._id, function(err) {
+            tasks.getTasksForUser(mockUser._id, function(err, tasks) {
               tasks.length.should.be.equal(0);
               done();
             })

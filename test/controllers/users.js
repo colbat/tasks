@@ -1,56 +1,43 @@
 var mockgoose = require('mockgoose');
-var mongoose = require('mongoose');
 var users =require('../../controllers/users');
 var tasks = require('../../controllers/tasks');
-var assert = require('assert');
 var chai = require('chai');
 var should = chai.should();
-
-// Mocks the mongoose connection
-before(function(done) {
-  if(mongoose.connection.readyState === 0) {
-    mockgoose(mongoose).then(function() {
-      mongoose.connect('mongodb://localhost/tasks', function(err) {
-        done(err);
-      });
-    });
-  } else {
-    done();
-  }
-});
-
-afterEach(function(done) {
-  mockgoose.reset();
-  done();
-});
-
-after(function(done) {
-  mongoose.disconnect(done);
-});
+var connectDB = require('../utils').connectDB;
+var disconnectDB = require('../utils').disconnectDB;
+var helper = require('../helper');
 
 describe('Users Controller', function() {
+
+  before(function(done) {
+    connectDB(function(err) {
+      done(err);
+    });
+  });
+
+  after(function() {
+    disconnectDB();
+  });
+
+  afterEach(function(done) {
+    mockgoose.reset();
+    done();
+  });
 
   describe('Save', function() {
 
     it('should save the user in the database', function(done) {
-      var mockUser = {
-        email: 'test@test.com',
-        username: 'test',
-        password: 'test'
-      };
+      var mockUser = helper.user;
       users.saveUser(mockUser, function(err, user) {
         should.not.exist(err);
-        assert.equal(mockUser.email, user.email);
-        assert.equal(mockUser.username, user.username);
+        user.email.should.be.equal(mockUser.email);
+        user.username.should.be.equal(mockUser.username);
         done();
       });
     });
 
     it('should err when saving local user with missing email', function(done) {
-      var mockUser = {
-        username: 'test',
-        password: 'test'
-      };
+      var mockUser = helper.userWithoutEmail;
       users.saveUser(mockUser, function(err, user) {
         should.exist(err);
         should.not.exist(user);
@@ -59,10 +46,7 @@ describe('Users Controller', function() {
     });
 
     it('should err when saving local user with missing username', function(done) {
-      var mockUser = {
-        email: 'test@test.com',
-        password: 'test'
-      };
+      var mockUser = helper.userWithoutUsername;
       users.saveUser(mockUser, function(err, user) {
         should.exist(err);
         should.not.exist(user);
@@ -71,10 +55,7 @@ describe('Users Controller', function() {
     });
 
     it('should err when saving local user with missing password', function(done) {
-      var mockUser = {
-        email: 'test@test.com',
-        username: 'test'
-      };
+      var mockUser = helper.userWithoutPassword;
       users.saveUser(mockUser, function(err, user) {
         should.exist(err);
         should.not.exist(user);
@@ -86,19 +67,9 @@ describe('Users Controller', function() {
 
   describe('Get', function() {
 
-    it('should retrieve all the users', function(done) {   
-      var mockUser1 = {
-        email: 'test@test.com',
-        username: 'test',
-        password: 'test'
-      };
-
-      var mockUser2 = {
-        email: 'test2@test.com',
-        username: 'test2',
-        password: 'test2'
-      };
-
+    it('should retrieve all the users', function(done) {  
+      var mockUser1 = helper.user;
+      var mockUser2 = helper.user2;
       users.saveUser(mockUser1, function(err, user) {
         users.saveUser(mockUser2, function(err, user) {
           users.getUsers(function(err, users) {
@@ -110,71 +81,44 @@ describe('Users Controller', function() {
     });
 
     it('should retrieve a user by id', function(done) {
-      var mockUser = {
-        _id: '57dbf32979de682530f8d629',
-        email: 'test@test.com',
-        username: 'test',
-        password: 'test'
-      };
-
+      var mockUser = helper.user;
       users.saveUser(mockUser, function(err, user) {
-        users.getUser('57dbf32979de682530f8d629', function(err, user) {
+        users.getUser(mockUser._id, function(err, user) {
           should.exist(user);
-          user._id.toString().should.be.equal('57dbf32979de682530f8d629');
+          user._id.toString().should.be.equal(mockUser._id);
           done();
         });
       });
     });
 
     it('should retrieve a user by email', function(done) {
-      var mockUser = {
-        email: 'testbyemail@test.com',
-        username: 'test',
-        password: 'test'
-      };
-
+      var mockUser = helper.user;
       users.saveUser(mockUser, function(err, user) {
-        users.getUserByEmail('testbyemail@test.com', function(err, user) {
+        users.getUserByEmail(mockUser.email, function(err, user) {
           should.exist(user);
-          user.email.should.be.equal('testbyemail@test.com');
+          user.email.should.be.equal(mockUser.email);
           done();
         });
       });
     });
 
     it('should retrieve a user by facebook profile id', function(done) {
-      var mockUser = {
-        email: 'test@test.com',
-        username: 'test',
-        password: 'test',
-        facebook: {
-          profileId: '10153288209681518'
-        }
-      };
-
+      var mockUser = helper.userFacebook;
       users.saveUser(mockUser, function(err, user) {
-        users.getUserByFacebookProfileId('10153288209681518', function(err, user) {
+        users.getUserByFacebookProfileId(mockUser.facebook.profileId, function(err, user) {
           should.exist(user);
-          user.facebook.profileId.should.be.equal('10153288209681518');
+          user.facebook.profileId.should.be.equal(mockUser.facebook.profileId);
           done();
         });
       });
     });
 
     it('should retrieve a user by twitter profile id', function(done) {
-      var mockUser = {
-        email: 'test@test.com',
-        username: 'test',
-        password: 'test',
-        twitter: {
-          profileId: '140793487'
-        }
-      };
-
+      var mockUser = helper.userTwitter;
       users.saveUser(mockUser, function(err, user) {
-        users.getUserByTwitterProfileId('140793487', function(err, user) {
+        users.getUserByTwitterProfileId(mockUser.twitter.profileId, function(err, user) {
           should.exist(user);
-          user.twitter.profileId.should.be.equal('140793487');
+          user.twitter.profileId.should.be.equal(mockUser.twitter.profileId);
           done();
         });
       });
@@ -185,16 +129,10 @@ describe('Users Controller', function() {
   describe('Delete', function() {
 
     it('should delete a user', function(done) {
-      var mockUser = {
-        _id: '57dbf32979de682530f8d629',
-        email: 'test@test.com',
-        username: 'test',
-        password: 'test'
-      };
-
+      var mockUser = helper.user;
       users.saveUser(mockUser, function(err, user) {
-        users.deleteUser('57dbf32979de682530f8d629', function(err, user) {
-          user._id.toString().should.be.equal('57dbf32979de682530f8d629');
+        users.deleteUser(mockUser._id, function(err, user) {
+          user._id.toString().should.be.equal(mockUser._id);
           users.getUsers(function(err, users) {
             users.should.have.length(0);
             done();
@@ -204,24 +142,14 @@ describe('Users Controller', function() {
     });
 
     it('should delete all the tasks of the user when this user is deleted', function(done) {
-      var mockUser = {
-        _id: '57dbf32979de682530f8d629',
-        email: 'test@test.com',
-        username: 'test',
-        password: 'test'
-      };
-
-      var task1 = {manager: '57dbf32979de682530f8d629', label: 'task1'};
-      var task2 = {manager: '57dbf32979de682530f8d629', label: 'task2'};
+      var mockUser = helper.user;
+      var task1 = helper.task1;
+      var task2 = helper.task2;
 
       users.saveUser(mockUser, function(err, user) {
-
         tasks.saveTask(task1, function(err, task) {
-
           tasks.saveTask(task2, function(err, task) {
-
-            users.deleteUser('57dbf32979de682530f8d629', function(err, user) {
-
+            users.deleteUser(mockUser._id, function(err, user) {
               tasks.getTasks(function(err, allTasks) {
                 allTasks.should.have.length(0);
                 done();
